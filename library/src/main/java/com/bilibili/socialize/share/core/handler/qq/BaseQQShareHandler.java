@@ -17,20 +17,19 @@
 package com.bilibili.socialize.share.core.handler.qq;
 
 import android.app.Activity;
-import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.SharePlatformConfig;
+import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareConfigException;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.BaseShareHandler;
-import com.bilibili.socialize.share.util.BuildHelper;
+import com.tencent.open.utils.Util;
 import com.tencent.tauth.IUiListener;
 import com.tencent.tauth.Tencent;
 import com.tencent.tauth.UiError;
@@ -43,7 +42,6 @@ import java.util.Map;
  * @since 2015/10/8
  */
 public abstract class BaseQQShareHandler extends BaseShareHandler {
-    private static final String PACKAGE_QQ = "com.tencent.mobileqq";
 
     private static String mAppId;
     protected static Tencent mTencent;
@@ -93,7 +91,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
             public void run() {
                 postProgressStart();
                 onShare(activity, mTencent, params, mUiListener);
-                if (!BaseQQShareHandler.isQQClientInstalled(getContext())) {
+                if (!Util.isMobileQQSupportShare(getContext())) {
                     String msg = getContext().getString(R.string.bili_share_sdk_not_install_qq);
                     Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
                     if (getShareListener() != null) {
@@ -109,10 +107,6 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     @Override
     protected boolean isNeedActivityContext() {
         return true;
-    }
-
-    public static boolean isQQClientInstalled(Context context) {
-        return BuildHelper.isClientInstalled(context, PACKAGE_QQ);
     }
 
     protected final IUiListener mUiListener = new IUiListener() {
