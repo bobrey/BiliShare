@@ -3,6 +3,7 @@
 
 An android socializing SDK that supports to share text/image/web page/video/audio to qq/qzone/wechat/moment/sina platforms.
 
+开发交流群：397462257
 ## Quick Overview
  - Download [bilibili][1]
  - screenshot 
@@ -14,8 +15,8 @@ The library "biliShare" is indispensable. But "biliShare-util" is not indispensa
  - Add the dependency to your build.gradle.
 ```
 dependencies {
-    compile 'com.jungly.socialize:biliShare:0.11'
-    compile 'com.jungly.socialize:biliShare-util:0.1'
+    compile 'com.jungly.socialize:biliShare:0.12'
+    compile 'com.jungly.socialize:biliShare-util:0.11'
 }
 ```
 
