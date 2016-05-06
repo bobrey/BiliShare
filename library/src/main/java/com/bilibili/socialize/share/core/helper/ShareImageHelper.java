@@ -19,6 +19,8 @@ package com.bilibili.socialize.share.core.helper;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
 import com.bilibili.socialize.share.download.IImageDownloader;
@@ -69,19 +71,23 @@ public class ShareImageHelper {
             return null;
         } else if (image.isBitmapImage()) {
             if (image.getBitmap().getByteCount() > BITMAP_SAVE_THRESHOLD) {
-                File file = BitmapUtil.saveBitmapToExternal(image.getBitmap(), mShareConfiguration.getImageCachePath());
-                if (file != null && file.exists()) {
-                    image.setLocalFile(file);
+                if (checkImageCachePath()) {
+                    File file = BitmapUtil.saveBitmapToExternal(image.getBitmap(), mShareConfiguration.getImageCachePath(mContext));
+                    if (file != null && file.exists()) {
+                        image.setLocalFile(file);
+                    }
                 }
             }
         } else if (image.isResImage()) {
             Bitmap bmp = BitmapFactory.decodeResource(mContext.getResources(), image.getResId());
             if (bmp.getByteCount() > BITMAP_SAVE_THRESHOLD) {
-                File file = BitmapUtil.saveBitmapToExternal(bmp, mShareConfiguration.getImageCachePath());
-                if (file != null && file.exists()) {
-                    image.setLocalFile(file);
+                if (checkImageCachePath()) {
+                    File file = BitmapUtil.saveBitmapToExternal(bmp, mShareConfiguration.getImageCachePath(mContext));
+                    if (file != null && file.exists()) {
+                        image.setLocalFile(file);
+                        bmp.recycle();
+                    }
                 }
-                bmp.recycle();
             }
         }
         return image;
@@ -101,13 +107,17 @@ public class ShareImageHelper {
             return;
         }
 
-        String localFilePath = localFile.getAbsolutePath();
-        if (!localFilePath.startsWith(mContext.getCacheDir().getParentFile().getAbsolutePath())
-                && localFilePath.startsWith(mShareConfiguration.getImageCachePath())) {
+        if (!checkImageCachePath()) {
             return;
         }
 
-        File targetFile = copyFile(localFile, mShareConfiguration.getImageCachePath());
+        String localFilePath = localFile.getAbsolutePath();
+        if (!localFilePath.startsWith(mContext.getCacheDir().getParentFile().getAbsolutePath())
+                && localFilePath.startsWith(mShareConfiguration.getImageCachePath(mContext))) {
+            return;
+        }
+
+        File targetFile = copyFile(localFile, mShareConfiguration.getImageCachePath(mContext));
         if (targetFile != null && targetFile.exists()) {
             shareImage.setLocalFile(targetFile);
         }
@@ -203,7 +213,14 @@ public class ShareImageHelper {
         if (image == null || !image.isNetImage()) {
             task.run();
         } else {
-            mShareConfiguration.getImageDownloader().download(mContext, image.getNetImageUrl(), mShareConfiguration.getImageCachePath(),
+            if (!checkImageCachePath()) {
+                if (mCallback != null) {
+                    mCallback.onImageDownloadFailed();
+                }
+                return;
+            }
+
+            mShareConfiguration.getImageDownloader().download(mContext, image.getNetImageUrl(), mShareConfiguration.getImageCachePath(mContext),
                     new IImageDownloader.OnImageDownloadListener() {
                         @Override
                         public void onStart() {
@@ -228,6 +245,14 @@ public class ShareImageHelper {
                         }
                     });
         }
+    }
+
+    private boolean checkImageCachePath() {
+        if (TextUtils.isEmpty(mShareConfiguration.getImageCachePath(mContext))) {
+            Toast.makeText(mContext.getApplicationContext(), "存储设备不可用", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return true;
     }
 
     protected ShareImage getShareImage(BaseShareParam params) {

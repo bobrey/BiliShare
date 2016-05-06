@@ -36,7 +36,7 @@ import java.util.concurrent.Executors;
  */
 public class BiliShareConfiguration {
 
-    final String mImageCachePath;
+    String mImageCachePath;
     final int mDefaultShareImage;
 
     private String mSinaRedirectUrl;
@@ -54,7 +54,10 @@ public class BiliShareConfiguration {
         mTaskExecutor = Executors.newCachedThreadPool();
     }
 
-    public String getImageCachePath() {
+    public String getImageCachePath(Context context) {
+        if (TextUtils.isEmpty(mImageCachePath)) {
+            mImageCachePath = Builder.getDefaultImageCacheFile(context.getApplicationContext());
+        }
         return mImageCachePath;
     }
 
@@ -131,17 +134,7 @@ public class BiliShareConfiguration {
                 }
             }
             if (imageCacheFile == null) {
-                File extCacheFile = mContext.getExternalCacheDir();
-                if (extCacheFile == null) {
-                    extCacheFile = mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-                }
-                if (extCacheFile == null) {
-                    throw new IllegalArgumentException("The external dir is unavailable");
-                }
-                mImageCachePath = extCacheFile.getAbsolutePath() +
-                        File.separator + IMAGE_CACHE_FILE_NAME + File.separator;
-                imageCacheFile = new File(mImageCachePath);
-                imageCacheFile.mkdirs();
+                mImageCachePath = getDefaultImageCacheFile(mContext);
             }
 
             if (mImageLoader == null) {
@@ -159,6 +152,20 @@ public class BiliShareConfiguration {
             if (TextUtils.isEmpty(mSinaScope)) {
                 mSinaScope = SinaShareHandler.DEFAULT_SCOPE;
             }
+        }
+
+        private static String getDefaultImageCacheFile(Context context) {
+            String imageCachePath = null;
+            File extCacheFile = context.getExternalCacheDir();
+            if (extCacheFile == null) {
+                extCacheFile = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            }
+            if (extCacheFile != null) {
+                imageCachePath = extCacheFile.getAbsolutePath() + File.separator + IMAGE_CACHE_FILE_NAME + File.separator;
+                File imageCacheFile = new File(imageCachePath);
+                imageCacheFile.mkdirs();
+            }
+            return imageCachePath;
         }
     }
 
