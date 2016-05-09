@@ -18,6 +18,8 @@ package com.bilibili.socialize.share.core;
 
 import android.content.Context;
 import android.os.Environment;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.TextUtils;
 
 import com.bilibili.socialize.share.R;
@@ -34,7 +36,7 @@ import java.util.concurrent.Executors;
  * @email jungly.ik@gmail.com
  * @since 2015/10/8
  */
-public class BiliShareConfiguration {
+public class BiliShareConfiguration implements Parcelable {
 
     String mImageCachePath;
     final int mDefaultShareImage;
@@ -169,4 +171,35 @@ public class BiliShareConfiguration {
         }
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.mImageCachePath);
+        dest.writeInt(this.mDefaultShareImage);
+        dest.writeString(this.mSinaRedirectUrl);
+        dest.writeString(this.mSinaScope);
+    }
+
+    protected BiliShareConfiguration(Parcel in) {
+        this.mImageCachePath = in.readString();
+        this.mDefaultShareImage = in.readInt();
+        this.mSinaRedirectUrl = in.readString();
+        this.mSinaScope = in.readString();
+        this.mImageDownloader = new DefaultImageDownloader();
+        this.mTaskExecutor = Executors.newCachedThreadPool();
+    }
+
+    public static final Parcelable.Creator<BiliShareConfiguration> CREATOR = new Parcelable.Creator<BiliShareConfiguration>() {
+        public BiliShareConfiguration createFromParcel(Parcel source) {
+            return new BiliShareConfiguration(source);
+        }
+
+        public BiliShareConfiguration[] newArray(int size) {
+            return new BiliShareConfiguration[size];
+        }
+    };
 }

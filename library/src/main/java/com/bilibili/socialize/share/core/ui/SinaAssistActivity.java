@@ -19,16 +19,22 @@ package com.bilibili.socialize.share.core.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.bilibili.socialize.share.core.BiliShare;
-import com.bilibili.socialize.share.core.SocializeMedia;
+import com.bilibili.socialize.share.core.BiliShareConfiguration;
+import com.bilibili.socialize.share.core.SharePlatformConfig;
 import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.sina.SinaShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
+import com.bilibili.socialize.share.util.SharePlatformConfigHelper;
 import com.sina.weibo.sdk.api.share.BaseResponse;
 import com.sina.weibo.sdk.api.share.IWeiboHandler;
+
+import java.util.Map;
 
 /**
  * 处理微博分享，相当于QQ的{@link com.tencent.connect.common.AssistActivity}
@@ -40,6 +46,8 @@ import com.sina.weibo.sdk.api.share.IWeiboHandler;
 public class SinaAssistActivity extends Activity implements IWeiboHandler.Response {
     private static final String TAG = SinaAssistActivity.class.getSimpleName();
 
+    public static final String KEY_CONFIG = "sina_share_config";
+    public static final String KEY_APPKEY = "sina_share_appkey";
     public static final String KEY_CODE = "sina_share_result_code";
     public static final String KEY_PARAM = "sina_share_param";
 
@@ -53,13 +61,34 @@ public class SinaAssistActivity extends Activity implements IWeiboHandler.Respon
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mShareHandler = new SinaShareHandler(this, BiliShare.getShareConfiguration());
+        //解决多进程问题
+        BiliShareConfiguration shareConfig = BiliShare.getShareConfiguration();
+        if (shareConfig == null) {
+            shareConfig = getIntent().getParcelableExtra(KEY_CONFIG);
+        }
+        if (shareConfig == null) {
+            finishWithFailResult();
+            return;
+        }
+
+        Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.SINA);
+        if (appConfig == null || appConfig.isEmpty() || TextUtils.isEmpty((String) appConfig.get(SharePlatformConfig.APP_KEY))) {
+            String appKey = getIntent().getStringExtra(KEY_APPKEY);
+            if (TextUtils.isEmpty(appKey)) {
+                finishWithFailResult();
+                return;
+            } else {
+                SharePlatformConfigHelper.configSina(appKey);
+            }
+        }
+
+        mShareHandler = new SinaShareHandler(this, shareConfig);
         try {
             mShareHandler.checkConfig();
             mShareHandler.init();
         } catch (Exception e) {
             e.printStackTrace();
-            finishWithCancelResult();
+            finishWithFailResult();
             return;
         }
 
