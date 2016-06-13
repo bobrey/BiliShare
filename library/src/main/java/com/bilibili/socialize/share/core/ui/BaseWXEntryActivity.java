@@ -20,8 +20,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
+import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.SocializeMedia;
+import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
+import com.bilibili.socialize.share.core.handler.AbsShareHandler;
 import com.bilibili.socialize.share.core.handler.IShareHandler;
 import com.bilibili.socialize.share.core.handler.ShareHandlerPool;
 import com.bilibili.socialize.share.core.handler.wx.BaseWxShareHandler;
@@ -52,17 +55,23 @@ public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEven
         }
         if (wxHandler == null) {
             wxHandler = new WxChatShareHandler(this, new BiliShareConfiguration.Builder(this).build());
+            ((AbsShareHandler) wxHandler).setShareListener(mShareListener);
+            initWXApi();
         }
 
         mShareHandler = (BaseWxShareHandler) wxHandler;
 
-        if (isAutoCreateWXAPI()) {
-            mIWXAPI = WXAPIFactory.createWXAPI(this, getAppId(), true);
-            if (mIWXAPI.isWXAppInstalled()) {
-                mIWXAPI.registerApp(getAppId());
-            }
-            mIWXAPI.handleIntent(getIntent(), this);
+        if (isAutoCreateWXAPI() && mIWXAPI == null) {
+            initWXApi();
         }
+    }
+
+    private void initWXApi() {
+        mIWXAPI = WXAPIFactory.createWXAPI(this, getAppId(), true);
+        if (mIWXAPI.isWXAppInstalled()) {
+            mIWXAPI.registerApp(getAppId());
+        }
+        mIWXAPI.handleIntent(getIntent(), this);
     }
 
     @Override
@@ -94,6 +103,42 @@ public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEven
             finish();
         }
     }
+
+    private SocializeListeners.ShareListener mShareListener = new SocializeListeners.ShareListener() {
+        @Override
+        public void onStart(SocializeMedia type) {
+
+        }
+
+        @Override
+        public void onProgress(SocializeMedia type, String progressDesc) {
+
+        }
+
+        @Override
+        public void onSuccess(SocializeMedia type, int code) {
+            sendResult(BiliShareStatusCode.ST_CODE_SUCCESSED);
+        }
+
+        @Override
+        public void onError(SocializeMedia type, int code, Throwable error) {
+            sendResult(BiliShareStatusCode.ST_CODE_ERROR);
+        }
+
+        @Override
+        public void onCancel(SocializeMedia type) {
+            sendResult(BiliShareStatusCode.ST_CODE_ERROR_CANCEL);
+        }
+
+        private void sendResult(int statusCode) {
+            if (mShareHandler != null) {
+                mShareHandler.release();
+            }
+            Intent intent = new Intent(BaseWxShareHandler.ACTION_RESULT);
+            intent.putExtra(BaseWxShareHandler.BUNDLE_STATUS_CODE, statusCode);
+            sendBroadcast(intent);
+        }
+    };
 
     protected boolean isAutoFinishAfterOnReq() {
         return true;

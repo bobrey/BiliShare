@@ -17,16 +17,19 @@
 package com.bilibili.socialize.share.core.handler.wx;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.SharePlatformConfig;
 import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.InvalidParamException;
 import com.bilibili.socialize.share.core.error.ShareConfigException;
@@ -59,6 +62,9 @@ import java.util.Map;
  * @since 2015/9/31 18:43
  */
 public abstract class BaseWxShareHandler extends BaseShareHandler {
+    public static final String ACTION_RESULT = "com.bilibili.socialize.share.wx.result";
+    public static final String BUNDLE_STATUS_CODE = "status_code";
+
     protected static final int IMAGE_MAX = 32 * 1024;
     protected static final int IMAGE_WIDTH = 600;
     protected static final int IMAGE_HEIGHT = 800;
@@ -70,6 +76,12 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
 
     public BaseWxShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
+        try {
+            IntentFilter filter = new IntentFilter(ACTION_RESULT);
+            context.registerReceiver(mResultReceiver, filter);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
     private static Map<String, Object> getAppConfig() {
@@ -317,6 +329,42 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException(resp.errStr));
                 break;
         }
+    }
+
+    @Override
+    public void release() {
+        try {
+            if (getContext() != null) {
+                getContext().unregisterReceiver(mResultReceiver);
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+        super.release();
+    }
+
+    private BroadcastReceiver mResultReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            SocializeListeners.ShareListener listener = getShareListener();
+            if (intent == null || listener == null) {
+                return;
+            }
+
+            int code = intent.getIntExtra(BUNDLE_STATUS_CODE, -1);
+            if (code == BiliShareStatusCode.ST_CODE_SUCCESSED) {
+                listener.onSuccess(getSocializeType(), BiliShareStatusCode.ST_CODE_SUCCESSED);
+            } else if (code == BiliShareStatusCode.ST_CODE_ERROR) {
+                listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException("unknown"));
+            } else if (code == BiliShareStatusCode.ST_CODE_ERROR_CANCEL) {
+                listener.onCancel(getSocializeType());
+            }
+        }
+    };
+
+    @Override
+    protected boolean isNeedActivityContext() {
+        return true;
     }
 
     abstract int getShareType();
