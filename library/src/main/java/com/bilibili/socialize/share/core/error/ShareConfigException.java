@@ -19,7 +19,7 @@ package com.bilibili.socialize.share.core.error;
 /**
  * @author Jungly
  * @mail jungly.ik@gmail.com
- * @since 16/4/11
+ * @since 2016/4/11
  */
 public class ShareConfigException extends ShareException {
 

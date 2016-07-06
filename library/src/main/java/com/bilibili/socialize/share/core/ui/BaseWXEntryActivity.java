@@ -38,7 +38,7 @@ import com.tencent.mm.sdk.openapi.WXAPIFactory;
 /**
  * @author Jungly
  * @email jungly.ik@gmail.com
- * @date 15/10/8
+ * @date 2015/10/8
  */
 public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEventHandler {
 
