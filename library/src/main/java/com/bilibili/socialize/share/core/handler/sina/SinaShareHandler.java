@@ -79,7 +79,7 @@ public class SinaShareHandler extends BaseShareHandler {
             + "follow_app_official_microblog," + "invitation_write";
 
     public static IWeiboShareAPI mWeiboShareAPI = null;
-    private static SsoHandler mSsoHandler;
+    private SsoHandler mSsoHandler;
     private static WeiboMultiMessage mWeiboMessage;
 
     public SinaShareHandler(Activity context, BiliShareConfiguration configuration) {
@@ -101,8 +101,22 @@ public class SinaShareHandler extends BaseShareHandler {
     @Override
     public void init() throws Exception {
         //安装客户端后要重新创建实例
-        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
+        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext().getApplicationContext(), mAppKey);
         mWeiboShareAPI.registerApp();
+        createSSOIfNeed();
+    }
+
+    private void createSSOIfNeed() {
+        if (mSsoHandler != null) {
+            return;
+        }
+
+        final String token = getToken();
+        if (TextUtils.isEmpty(token)) {
+            final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey, mShareConfiguration.getSinaRedirectUrl(), mShareConfiguration.getSinaScope());
+            mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);
+            mSsoHandler.authorize(mAuthListener);
+        }
     }
 
     /**
@@ -447,8 +461,7 @@ public class SinaShareHandler extends BaseShareHandler {
         final String token = getToken();
         final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey, mShareConfiguration.getSinaRedirectUrl(), mShareConfiguration.getSinaScope());
         if (TextUtils.isEmpty(token)) {
-            mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);
-            mSsoHandler.authorize(mAuthListener);
+            createSSOIfNeed();
             mWeiboMessage = weiboMessage;
         } else {
             mWeiboMessage = null;

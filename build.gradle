@@ -2,6 +2,13 @@
 
 buildscript {
     repositories {
+        maven{
+            credentials {
+                username 'biliusers'
+                password 'bilibili'
+            }
+            url 'http://nexus.bilibili.co/content/groups/public/'
+        }
         jcenter()
     }
     dependencies {
@@ -14,8 +21,28 @@ buildscript {
 
 allprojects {
     repositories {
-        jcenter()
+        maven{
+            credentials {
+                username 'biliusers'
+                password 'bilibili'
+            }
+            url 'http://nexus.bilibili.co/content/groups/public/'
+        }
+        maven{
+            credentials {
+                username 'biliusers'
+                password 'bilibili'
+            }
+            url 'http://nexus.bilibili.co/content/groups/public-snapshots/'
+        }
     }
+}
+
+ext {
+    buildToolsVersion = '23.0.2'
+    targetSdkVersion = 23
+    minSdkVersion = 14
+    compileSdkVersion = targetSdkVersion
 }
 
 task clean(type: Delete) {

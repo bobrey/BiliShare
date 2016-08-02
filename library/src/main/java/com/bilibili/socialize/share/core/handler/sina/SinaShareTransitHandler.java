@@ -17,6 +17,7 @@
 package com.bilibili.socialize.share.core.handler.sina;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
@@ -64,19 +65,20 @@ public class SinaShareTransitHandler extends AbsShareHandler {
     @Override
     public void share(final BaseShareParam params, final SocializeListeners.ShareListener listener) throws Exception {
         super.share(params, listener);
+        final Context context = getContext();
         mImageHelper.saveBitmapToExternalIfNeed(params);
         mImageHelper.copyImageToCacheFileDirIfNeed(params);
         mImageHelper.downloadImageIfNeed(params, new Runnable() {
             @Override
             public void run() {
-                Intent intent = new Intent(getContext(), SinaAssistActivity.class);
+                Intent intent = new Intent(context, SinaAssistActivity.class);
                 intent.putExtra(SinaAssistActivity.KEY_PARAM, params);
                 Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.SINA);
                 if (appConfig != null) {
                     intent.putExtra(SinaAssistActivity.KEY_APPKEY, (String) appConfig.get(SharePlatformConfig.APP_KEY));
                 }
                 intent.putExtra(SinaAssistActivity.KEY_CONFIG, mShareConfiguration);
-                ((Activity) getContext()).startActivityForResult(intent, REQ_CODE);
+                ((Activity) context).startActivityForResult(intent, REQ_CODE);
             }
         });
     }

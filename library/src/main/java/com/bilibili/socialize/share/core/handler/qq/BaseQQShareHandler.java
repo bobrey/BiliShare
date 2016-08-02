@@ -75,7 +75,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     @Override
     protected void init() throws Exception {
         if (mTencent == null) {
-            mTencent = Tencent.createInstance(mAppId, getContext());
+            mTencent = Tencent.createInstance(mAppId, getContext().getApplicationContext());
         }
     }
 
@@ -91,7 +91,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
             public void run() {
                 postProgressStart();
                 onShare(activity, mTencent, params, mUiListener);
-                if (!Util.isMobileQQSupportShare(getContext())) {
+                if (activity != null && !Util.isMobileQQSupportShare(activity.getApplicationContext())) {
                     String msg = getContext().getString(R.string.bili_share_sdk_not_install_qq);
                     Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
                     if (getShareListener() != null) {
