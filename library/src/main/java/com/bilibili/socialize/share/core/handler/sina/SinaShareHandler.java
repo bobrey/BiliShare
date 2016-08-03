@@ -22,9 +22,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.SharePlatformConfig;
 import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.InvalidParamException;
 import com.bilibili.socialize.share.core.error.ShareConfigException;
@@ -79,7 +79,7 @@ public class SinaShareHandler extends BaseShareHandler {
             + "follow_app_official_microblog," + "invitation_write";
 
     public static IWeiboShareAPI mWeiboShareAPI = null;
-    private SsoHandler mSsoHandler;
+    private static SsoHandler mSsoHandler;
     private static WeiboMultiMessage mWeiboMessage;
 
     public SinaShareHandler(Activity context, BiliShareConfiguration configuration) {
@@ -100,23 +100,8 @@ public class SinaShareHandler extends BaseShareHandler {
 
     @Override
     public void init() throws Exception {
-        //安装客户端后要重新创建实例
-        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext().getApplicationContext(), mAppKey);
+        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
         mWeiboShareAPI.registerApp();
-        createSSOIfNeed();
-    }
-
-    private void createSSOIfNeed() {
-        if (mSsoHandler != null) {
-            return;
-        }
-
-        final String token = getToken();
-        if (TextUtils.isEmpty(token)) {
-            final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey, mShareConfiguration.getSinaRedirectUrl(), mShareConfiguration.getSinaScope());
-            mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);
-            mSsoHandler.authorize(mAuthListener);
-        }
     }
 
     /**
@@ -461,8 +446,9 @@ public class SinaShareHandler extends BaseShareHandler {
         final String token = getToken();
         final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey, mShareConfiguration.getSinaRedirectUrl(), mShareConfiguration.getSinaScope());
         if (TextUtils.isEmpty(token)) {
-            createSSOIfNeed();
             mWeiboMessage = weiboMessage;
+            mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);
+            mSsoHandler.authorize(mAuthListener);
         } else {
             mWeiboMessage = null;
             mSsoHandler = null;
@@ -546,10 +532,18 @@ public class SinaShareHandler extends BaseShareHandler {
         return token;
     }
 
-    private boolean isSinaClientInstalled() {
-        return mWeiboShareAPI.isWeiboAppInstalled();
+    @Override
+    public void release() {
+        super.release();
+        mSsoHandler = null;
+        mWeiboShareAPI = null;
+        mWeiboMessage = null;
     }
-    
+
+    private boolean isSinaClientInstalled() {
+        return mWeiboShareAPI != null && mWeiboShareAPI.isWeiboAppInstalled();
+    }
+
     @Override
     protected boolean isNeedActivityContext() {
         return true;

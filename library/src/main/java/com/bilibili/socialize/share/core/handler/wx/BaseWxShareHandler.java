@@ -70,7 +70,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     protected static final int IMAGE_HEIGHT = 800;
 
     private static String mAppId;
-    public static IWXAPI mIWXAPI;
+    public IWXAPI mIWXAPI;
 
     private ResultHolder mResultHolder = new ResultHolder();
 
@@ -107,11 +107,9 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
 
     @Override
     protected void init() throws Exception {
-        if (mIWXAPI == null) {
-            mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
-            if (mIWXAPI.isWXAppInstalled()) {
-                mIWXAPI.registerApp(mAppId);
-            }
+        mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
+        if (mIWXAPI.isWXAppInstalled()) {
+            mIWXAPI.registerApp(mAppId);
         }
 
         if (!mIWXAPI.isWXAppInstalled()) {
