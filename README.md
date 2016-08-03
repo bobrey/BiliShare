@@ -15,8 +15,7 @@ The library "biliShare" is indispensable. But "biliShare-util" is not indispensa
  - Add the dependency to your build.gradle.
 ```
 dependencies {
-    compile 'com.bilibili:biliShare:0.1.04'
-    compile 'com.jungly.socialize:biliShare-util:0.13@aar'
+    compile 'com.bilibili:biliShare:0.1.05'
 }
 ```
 
