@@ -20,6 +20,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SocializeListeners;
@@ -27,7 +29,6 @@ import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.helper.ShareImageHelper;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
-import com.tencent.open.utils.ThreadManager;
 
 /**
  * @author Jungly
@@ -43,6 +44,8 @@ public abstract class AbsShareHandler implements IShareHandler {
     private SocializeListeners.ShareListener mShareListener;
 
     protected ShareImageHelper mImageHelper;
+
+    private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
     public AbsShareHandler(Activity context, BiliShareConfiguration configuration) {
         initContext(context);
@@ -96,6 +99,10 @@ public abstract class AbsShareHandler implements IShareHandler {
     public void release() {
         mShareListener = null;
         mContext = null;
+        if (mMainHandler != null) {
+            mMainHandler.removeCallbacksAndMessages(null);
+            mMainHandler = null;
+        }
     }
 
     @Override
@@ -126,7 +133,9 @@ public abstract class AbsShareHandler implements IShareHandler {
     }
 
     protected void doOnMainThread(Runnable runnable) {
-        ThreadManager.getMainHandler().post(runnable);
+        if (mMainHandler != null) {
+            mMainHandler.post(runnable);
+        }
     }
 
     protected void postProgressStart() {

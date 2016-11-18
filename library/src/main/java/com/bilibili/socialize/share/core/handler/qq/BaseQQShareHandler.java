@@ -17,6 +17,9 @@
 package com.bilibili.socialize.share.core.handler.qq;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
@@ -29,7 +32,6 @@ import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareConfigException;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.BaseShareHandler;
-import com.tencent.open.utils.Util;
 import com.tencent.tauth.IUiListener;
 import com.tencent.tauth.Tencent;
 import com.tencent.tauth.UiError;
@@ -91,7 +93,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
             public void run() {
                 postProgressStart();
                 onShare(activity, mTencent, params, mUiListener);
-                if (activity != null && !Util.isMobileQQSupportShare(activity.getApplicationContext())) {
+                if (activity != null && !isMobileQQSupportShare(activity.getApplicationContext())) {
                     String msg = getContext().getString(R.string.bili_share_sdk_not_install_qq);
                     Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
                     if (getShareListener() != null) {
@@ -131,4 +133,45 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
             }
         }
     };
+
+    //copy from tencent sdk
+    private boolean isMobileQQSupportShare(Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        PackageInfo packageInfo = null;
+        try {
+            packageInfo = packageManager.getPackageInfo("com.tencent.mobileqq", 0);
+            return compareVersion(packageInfo.versionName, "4.1") >= 0;
+        } catch (PackageManager.NameNotFoundException var4) {
+            return false;
+        }
+    }
+
+    private int compareVersion(String versionName, String defaultValue) {
+        if (versionName == null && defaultValue == null) {
+            return 0;
+        } else if (versionName != null && defaultValue == null) {
+            return 1;
+        } else if (versionName == null && defaultValue != null) {
+            return -1;
+        } else {
+            String[] var2 = versionName.split("\\.");
+            String[] var3 = defaultValue.split("\\.");
+            try {
+                int var4;
+                for (var4 = 0; var4 < var2.length && var4 < var3.length; ++var4) {
+                    int var5 = Integer.parseInt(var2[var4]);
+                    int var6 = Integer.parseInt(var3[var4]);
+                    if (var5 < var6) {
+                        return -1;
+                    }
+                    if (var5 > var6) {
+                        return 1;
+                    }
+                }
+                return var2.length > var4 ? 1 : (var3.length > var4 ? -1 : 0);
+            } catch (NumberFormatException e) {
+                return versionName.compareTo(defaultValue);
+            }
+        }
+    }
 }
