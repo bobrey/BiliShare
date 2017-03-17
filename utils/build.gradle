@@ -31,5 +31,5 @@ dependencies {
 }
 
 afterEvaluate {
-    tasks.findByPath(":library:androidJavadocs").enabled = false;
+    tasks.findByPath(":utils:androidJavadocs").enabled = false;
 }
