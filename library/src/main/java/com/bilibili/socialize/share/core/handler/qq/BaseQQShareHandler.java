@@ -45,20 +45,16 @@ import java.util.Map;
  */
 public abstract class BaseQQShareHandler extends BaseShareHandler {
 
-    private static String mAppId;
-    protected static Tencent mTencent;
+    private String mAppId;
+    protected Tencent mTencent;
 
     public BaseQQShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
     }
 
-    private static Map<String, Object> getAppConfig() {
-        Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.QQ);
-        if (appConfig == null || appConfig.isEmpty()) {
-            appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.QZONE);
-        }
-
-        return appConfig;
+    private Map<String, String> getAppConfig() {
+        SharePlatformConfig platformConfig = mShareConfiguration.getPlatformConfig();
+        return platformConfig.getPlatformDevInfo(SocializeMedia.QQ);
     }
 
     @Override
@@ -67,9 +63,8 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
             return;
         }
 
-        Map<String, Object> appConfig = getAppConfig();
-        if (appConfig == null || appConfig.isEmpty()
-                || TextUtils.isEmpty(mAppId = (String) appConfig.get(SharePlatformConfig.APP_ID))) {
+        Map<String, String> appConfig = getAppConfig();
+        if (appConfig == null || TextUtils.isEmpty(mAppId = appConfig.get(SharePlatformConfig.APP_ID))) {
             throw new ShareConfigException("Please set QQ platform dev info.");
         }
     }
@@ -94,8 +89,8 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
                 postProgressStart();
                 onShare(activity, mTencent, params, mUiListener);
                 if (activity != null && !isMobileQQSupportShare(activity.getApplicationContext())) {
-                    String msg = getContext().getString(R.string.bili_share_sdk_not_install_qq);
-                    Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                    String msg = activity.getString(R.string.bili_share_sdk_not_install_qq);
+                    Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show();
                     if (getShareListener() != null) {
                         getShareListener().onError(getShareMedia(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_NOT_INSTALL, new ShareException(msg));
                     }

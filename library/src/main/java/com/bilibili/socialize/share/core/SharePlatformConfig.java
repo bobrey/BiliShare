@@ -16,36 +16,42 @@
 
 package com.bilibili.socialize.share.core;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.SparseArray;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Jungly
  * @email jungly.ik@gmail.com
  * @since 2015/9/31 17:51
  */
-public class SharePlatformConfig {
+public class SharePlatformConfig implements Parcelable {
 
-    public static final String APP_ID = "appId";
-    public static final String APP_KEY = "appKey";
-    public static final String APP_SECRET = "AppSecret";
+    public static final String APP_ID = "app_id";
+    public static final String APP_KEY = "app_key";
+    public static final String REDIRECT_URL = "redirect_url";
+    public static final String SCOPE = "scope";
 
-    private static HashMap<SocializeMedia, Map<String, Object>> CONFIG = new HashMap<>();
+    private SparseArray<Map<String, String>> mConfig = new SparseArray<>();
 
-    public static boolean hasAlreadyConfig() {
-        return !CONFIG.isEmpty();
+    public boolean hasAlreadyConfig() {
+        return mConfig.size() > 0;
     }
 
-    public static void addPlatformDevInfo(SocializeMedia media, HashMap<String, Object> value) {
-        CONFIG.put(media, value);
+    private void addPlatformDevInfo(SocializeMedia media, HashMap<String, String> value) {
+        mConfig.put(media.ordinal(), value);
     }
 
-    public static void addPlatformDevInfo(SocializeMedia media, String... appInfo) {
+    public void addPlatformDevInfo(SocializeMedia media, String... appInfo) {
         if (appInfo == null || appInfo.length % 2 != 0) {
             throw new RuntimeException("Please check your share app config info");
         }
 
-        HashMap<String, Object> infoMap = new HashMap<>();
+        HashMap<String, String> infoMap = new HashMap<>();
         int length = appInfo.length / 2;
         for (int i = 0; i < length; i++) {
             infoMap.put(appInfo[i * 2], appInfo[i * 2 + 1]);
@@ -53,8 +59,63 @@ public class SharePlatformConfig {
         addPlatformDevInfo(media, infoMap);
     }
 
-    public static Map<String, Object> getPlatformDevInfo(SocializeMedia media) {
-        return CONFIG.get(media);
+    public Map<String, String> getPlatformDevInfo(SocializeMedia media) {
+        return mConfig.get(media.ordinal());
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        int size = mConfig.size();
+        dest.writeInt(size);
+        int index = 0;
+        do {
+            int key = mConfig.keyAt(index);
+            dest.writeInt(key);
+
+            Map<String, String> value = mConfig.get(key);
+            int subSize = value.size();
+            dest.writeInt(subSize);
+            Set<String> keySet = value.keySet();
+            for (String subKey : keySet) {
+                dest.writeString(subKey);
+                dest.writeString(value.get(subKey));
+            }
+            index++;
+        } while (index < size);
+    }
+
+    public SharePlatformConfig() {
+    }
+
+    protected SharePlatformConfig(Parcel in) {
+        int size = in.readInt();
+        int index = 0;
+        do {
+            int key = in.readInt();
+            int subSize = in.readInt();
+            Map<String, String> value = new HashMap<>();
+            for (int subIndex = 0; subIndex < subSize; subIndex++) {
+                value.put(in.readString(), in.readString());
+            }
+            mConfig.put(key, value);
+            index++;
+        } while (index < size);
+    }
+
+    public static final Parcelable.Creator<SharePlatformConfig> CREATOR = new Parcelable.Creator<SharePlatformConfig>() {
+        @Override
+        public SharePlatformConfig createFromParcel(Parcel source) {
+            return new SharePlatformConfig(source);
+        }
+
+        @Override
+        public SharePlatformConfig[] newArray(int size) {
+            return new SharePlatformConfig[size];
+        }
+    };
 }

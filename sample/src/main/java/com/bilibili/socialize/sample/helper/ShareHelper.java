@@ -27,6 +27,9 @@ import com.bilibili.socialize.share.utils.selector.PopWrapSharePlatformSelector;
  * @author yrom & Jungly.
  */
 public final class ShareHelper {
+    public static final String QQ_APPID = "";
+    public static final String WECHAT_APPID = "";
+    public static final String SINA_APPKEY = "";
 
     static final String APP_URL = "http://app.bilibili.com";
     private FragmentActivity mContext;
@@ -43,16 +46,18 @@ public final class ShareHelper {
         if (context == null) {
             throw new NullPointerException();
         }
-        ConfigHelper.configPlatformsIfNeed();
         BiliShareConfiguration configuration = new BiliShareConfiguration.Builder(context)
                 .imageDownloader(new ShareFrescoImageDownloader())
+                .qq(QQ_APPID)
+                .weixin(WECHAT_APPID)
+                .sina(SINA_APPKEY, null, null)
                 .build();
-        BiliShare.init(configuration);
+        shareClient().config(configuration);
     }
 
     public void onActivityResult(FragmentActivity context, int requestCode, int resultCode, Intent data) {
         if (context == mContext) {
-            BiliShare.onActivityResult(context, requestCode, resultCode, data);
+            shareClient().onActivityResult(context, requestCode, resultCode, data);
         }
     }
 
@@ -113,7 +118,7 @@ public final class ShareHelper {
         if (content == null) {
             return;
         }
-        BiliShare.share(mContext, item.media, content, shareListener);
+        shareClient().share(mContext, item.media, content, shareListener);
     }
 
     protected SocializeListeners.ShareListener shareListener = new SocializeListeners.ShareListenerAdapter() {
@@ -141,6 +146,10 @@ public final class ShareHelper {
             mPlatformSelector = null;
         }
         mShareItemClick = null;
+    }
+
+    public static BiliShare shareClient()  {
+        return BiliShare.get("global");
     }
 
     public interface Callback {

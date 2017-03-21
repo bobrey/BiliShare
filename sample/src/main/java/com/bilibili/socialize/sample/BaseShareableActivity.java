@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.bilibili.socialize.sample.helper.ShareHelper;
-import com.bilibili.socialize.share.core.BiliShare;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.utils.R;
 
@@ -45,7 +44,7 @@ public abstract class BaseShareableActivity extends AppCompatActivity implements
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        BiliShare.onActivityResult(this, requestCode, resultCode, data);
+        ShareHelper.shareClient().onActivityResult(this, requestCode, resultCode, data);
     }
 
     @Override

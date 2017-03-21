@@ -38,22 +38,19 @@ import java.util.concurrent.Executors;
  */
 public class BiliShareConfiguration implements Parcelable {
 
-    String mImageCachePath;
-    final int mDefaultShareImage;
+    private String mImageCachePath;
+    private int mDefaultShareImage;
 
-    private String mSinaRedirectUrl;
-    private String mSinaScope;
-
-    final IImageDownloader mImageDownloader;
-    final Executor mTaskExecutor;
+    private IImageDownloader mImageDownloader;
+    private Executor mTaskExecutor;
+    private SharePlatformConfig mPlatformConfig;
 
     private BiliShareConfiguration(Builder builder) {
         mImageCachePath = builder.mImageCachePath;
         mDefaultShareImage = builder.mDefaultShareImage;
-        mSinaRedirectUrl = builder.mSinaRedirectUrl;
-        mSinaScope = builder.mSinaScope;
         mImageDownloader = builder.mImageLoader;
         mTaskExecutor = Executors.newCachedThreadPool();
+        mPlatformConfig = builder.mPlatformConfig;
     }
 
     public String getImageCachePath(Context context) {
@@ -67,20 +64,16 @@ public class BiliShareConfiguration implements Parcelable {
         return mDefaultShareImage;
     }
 
-    public String getSinaRedirectUrl() {
-        return mSinaRedirectUrl;
-    }
-
-    public String getSinaScope() {
-        return mSinaScope;
-    }
-
     public IImageDownloader getImageDownloader() {
         return mImageDownloader;
     }
 
     public Executor getTaskExecutor() {
         return mTaskExecutor;
+    }
+
+    public SharePlatformConfig getPlatformConfig() {
+        return mPlatformConfig;
     }
 
     public static class Builder {
@@ -90,10 +83,8 @@ public class BiliShareConfiguration implements Parcelable {
         private String mImageCachePath;
         private int mDefaultShareImage = -1;
 
-        private String mSinaRedirectUrl;
-        private String mSinaScope;
-
         private IImageDownloader mImageLoader;
+        private SharePlatformConfig mPlatformConfig = new SharePlatformConfig();
 
         public Builder(Context context) {
             mContext = context.getApplicationContext();
@@ -109,14 +100,35 @@ public class BiliShareConfiguration implements Parcelable {
             return this;
         }
 
-        public Builder sina(String redirectUrl, String mScope) {
-            mSinaRedirectUrl = redirectUrl;
-            mSinaScope = mScope;
+        public Builder sina(String appKey) {
+            return sina(appKey, null, null);
+        }
+
+        public Builder sina(String appKey, String redirectUrl, String scope) {
+            if (TextUtils.isEmpty(redirectUrl)) {
+                redirectUrl = SinaShareHandler.DEFAULT_REDIRECT_URL;
+            }
+            if (TextUtils.isEmpty(scope)) {
+                scope = SinaShareHandler.DEFAULT_SCOPE;
+            }
+            mPlatformConfig.addPlatformDevInfo(SocializeMedia.SINA, SharePlatformConfig.APP_KEY, appKey
+                    , SharePlatformConfig.REDIRECT_URL, redirectUrl
+                    , SharePlatformConfig.SCOPE, scope);
             return this;
         }
 
         public Builder imageDownloader(IImageDownloader loader) {
             mImageLoader = loader;
+            return this;
+        }
+
+        public Builder qq(String appId) {
+            mPlatformConfig.addPlatformDevInfo(SocializeMedia.QQ, SharePlatformConfig.APP_ID, appId);
+            return this;
+        }
+
+        public Builder weixin(String appId) {
+            mPlatformConfig.addPlatformDevInfo(SocializeMedia.WEIXIN, SharePlatformConfig.APP_ID, appId);
             return this;
         }
 
@@ -146,14 +158,6 @@ public class BiliShareConfiguration implements Parcelable {
             if (mDefaultShareImage == -1) {
                 mDefaultShareImage = R.drawable.default_share_image;
             }
-
-            if (TextUtils.isEmpty(mSinaRedirectUrl)) {
-                mSinaRedirectUrl = SinaShareHandler.DEFAULT_REDIRECT_URL;
-            }
-
-            if (TextUtils.isEmpty(mSinaScope)) {
-                mSinaScope = SinaShareHandler.DEFAULT_SCOPE;
-            }
         }
 
         private static String getDefaultImageCacheFile(Context context) {
@@ -180,15 +184,13 @@ public class BiliShareConfiguration implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.mImageCachePath);
         dest.writeInt(this.mDefaultShareImage);
-        dest.writeString(this.mSinaRedirectUrl);
-        dest.writeString(this.mSinaScope);
+        dest.writeParcelable(mPlatformConfig, 0);
     }
 
     protected BiliShareConfiguration(Parcel in) {
         this.mImageCachePath = in.readString();
         this.mDefaultShareImage = in.readInt();
-        this.mSinaRedirectUrl = in.readString();
-        this.mSinaScope = in.readString();
+        this.mPlatformConfig = in.readParcelable(SharePlatformConfig.class.getClassLoader());
         this.mImageDownloader = new DefaultImageDownloader();
         this.mTaskExecutor = Executors.newCachedThreadPool();
     }

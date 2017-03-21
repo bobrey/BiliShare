@@ -21,15 +21,12 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SharePlatformConfig;
 import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.handler.AbsShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 import com.bilibili.socialize.share.core.ui.SinaAssistActivity;
-
-import java.util.Map;
 
 /**
  * @author Jungly
@@ -73,10 +70,6 @@ public class SinaShareTransitHandler extends AbsShareHandler {
             public void run() {
                 Intent intent = new Intent(context, SinaAssistActivity.class);
                 intent.putExtra(SinaAssistActivity.KEY_PARAM, params);
-                Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.SINA);
-                if (appConfig != null) {
-                    intent.putExtra(SinaAssistActivity.KEY_APPKEY, (String) appConfig.get(SharePlatformConfig.APP_KEY));
-                }
                 intent.putExtra(SinaAssistActivity.KEY_CONFIG, mShareConfiguration);
                 ((Activity) context).startActivityForResult(intent, REQ_CODE);
             }

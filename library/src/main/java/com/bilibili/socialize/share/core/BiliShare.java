@@ -18,8 +18,16 @@ package com.bilibili.socialize.share.core;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.text.TextUtils;
+import android.widget.Toast;
 
+import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
+import com.bilibili.socialize.share.core.error.ShareException;
+import com.bilibili.socialize.share.core.handler.IShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Jungly
@@ -27,42 +35,140 @@ import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
  * @since 2015/9/31
  */
 public class BiliShare {
+    private static final Map<String, BiliShare> CLIENT_MAP = new HashMap<>();
 
-    private static final BiliShareAttach sShareAttach = new BiliShareAttach();
+    private IShareHandler mCurrentHandler;
+    private ShareHandlerPool mShareHandlerPool = new ShareHandlerPool();
+    private BiliShareConfiguration mShareConfiguration;
+    private SocializeListeners.ShareListener mOuterShareListener;
 
-    private BiliShare() {
+    private String mName;
+
+    public static BiliShare get(String name) {
+        if (TextUtils.isEmpty(name)) {
+            throw new IllegalArgumentException("name can not be empty");
+        }
+        BiliShare router = CLIENT_MAP.get(name);
+        if (router == null) {
+            synchronized (CLIENT_MAP) {
+                router = CLIENT_MAP.get(name);
+                if (router == null) {
+                    BiliShare value = new BiliShare(name);
+                    CLIENT_MAP.put(name, value);
+                    router = value;
+                }
+                return router;
+            }
+        }
+        return router;
+    }
+
+    private BiliShare(String name) {
+        mName = name;
     }
 
     /**
-     * 分享之前必须先初始化.
+     * 分享之前必须先配置.
      *
      * @param configuration
      */
-    public static void init(BiliShareConfiguration configuration) {
-        sShareAttach.init(configuration);
+    public void config(BiliShareConfiguration configuration) {
+        mShareConfiguration = configuration;
     }
 
-    /**
-     * 分享的入口，开启搞比利的大门。
-     */
-    public static void share(Activity activity, SocializeMedia type, BaseShareParam params, SocializeListeners.ShareListener listener) {
-        sShareAttach.share(activity, type, params, listener);
+    public void share(Activity activity, SocializeMedia type, BaseShareParam params, SocializeListeners.ShareListener listener) {
+        if (mShareConfiguration == null) {
+            throw new IllegalArgumentException("BiliShareConfiguration must be initialized before invoke share");
+        }
+
+        if (mCurrentHandler != null) {
+            release(mCurrentHandler.getShareMedia());
+        }
+
+        mCurrentHandler = mShareHandlerPool.newHandler(activity, type, mShareConfiguration);
+
+        if (mCurrentHandler != null) {
+            try {
+                mOuterShareListener = listener;
+
+                if (params == null) {
+                    throw new IllegalArgumentException(("Share param cannot be null"));
+                }
+
+                mInnerProxyListener.onStart(type);
+                mCurrentHandler.share(params, mInnerProxyListener);
+
+                if (mCurrentHandler.isDisposable()) {
+                    release(mCurrentHandler.getShareMedia());
+                }
+
+            } catch (ShareException e) {
+                e.printStackTrace();
+                mInnerProxyListener.onError(type, e.getCode(), e);
+            } catch (Exception e) {
+                mInnerProxyListener.onError(type, BiliShareStatusCode.ST_CODE_SHARE_ERROR_EXCEPTION, e);
+                e.printStackTrace();
+            }
+        } else {
+            mInnerProxyListener.onError(type, BiliShareStatusCode.ST_CODE_SHARE_ERROR_UNEXPLAINED, new Exception("Unknown share type"));
+        }
     }
 
-    /**
-     * 顾名思义
-     *
-     * @param activity
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
-    public static void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        sShareAttach.onActivityResult(activity, requestCode, resultCode, data);
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        if (mCurrentHandler != null) {
+            mCurrentHandler.onActivityResult(activity, requestCode, resultCode, data, mInnerProxyListener);
+        }
     }
 
-    public static BiliShareConfiguration getShareConfiguration() {
-        return sShareAttach.getShareConfiguration();
+    private void release(SocializeMedia type) {
+        mOuterShareListener = null;
+        if (mCurrentHandler != null) {
+            mCurrentHandler.release();
+        }
+        mCurrentHandler = null;
+        mShareHandlerPool.remove(type);
     }
+
+    private IShareHandler.InnerShareListener mInnerProxyListener = new IShareHandler.InnerShareListener() {
+
+        @Override
+        public void onStart(SocializeMedia type) {
+            if (mOuterShareListener != null) {
+                mOuterShareListener.onStart(type);
+            }
+        }
+
+        @Override
+        public void onProgress(SocializeMedia type, String progressDesc) {
+            if (mCurrentHandler != null && mCurrentHandler.getContext() != null) {
+                Toast.makeText(mCurrentHandler.getContext(), progressDesc, Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override
+        public void onSuccess(SocializeMedia type, int code) {
+            if (mOuterShareListener != null) {
+                mOuterShareListener.onSuccess(type, code);
+            }
+            release(type);
+        }
+
+        @Override
+        public void onError(SocializeMedia type, int code, Throwable error) {
+            if (mOuterShareListener != null) {
+                mOuterShareListener.onError(type, code, error);
+            }
+            release(type);
+        }
+
+        @Override
+        public void onCancel(SocializeMedia type) {
+            if (mOuterShareListener != null) {
+                mOuterShareListener.onCancel(type);
+            }
+            release(type);
+        }
+
+    };
 
 }

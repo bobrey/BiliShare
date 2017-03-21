@@ -72,15 +72,15 @@ import java.util.Map;
  */
 public class SinaShareHandler extends BaseShareHandler {
 
-    private static String mAppKey;
     public static final String DEFAULT_REDIRECT_URL = "https://api.weibo.com/oauth2/default.html";
     public static final String DEFAULT_SCOPE = "email,direct_messages_read,direct_messages_write,"
             + "friendships_groups_read,friendships_groups_write,statuses_to_me_read,"
             + "follow_app_official_microblog," + "invitation_write";
 
-    public static IWeiboShareAPI mWeiboShareAPI = null;
-    private static SsoHandler mSsoHandler;
-    private static WeiboMultiMessage mWeiboMessage;
+    public IWeiboShareAPI mWeiboShareAPI = null;
+    private SsoHandler mSsoHandler;
+    private WeiboMultiMessage mWeiboMessage;
+    private String mAppKey;
 
     public SinaShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
@@ -92,16 +92,18 @@ public class SinaShareHandler extends BaseShareHandler {
             return;
         }
 
-        Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.SINA);
-        if (appConfig == null || appConfig.isEmpty() || TextUtils.isEmpty(mAppKey = (String) appConfig.get(SharePlatformConfig.APP_KEY))) {
+        Map<String, String> appConfig = mShareConfiguration.getPlatformConfig().getPlatformDevInfo(SocializeMedia.SINA);
+        if (appConfig == null || TextUtils.isEmpty(mAppKey = appConfig.get(SharePlatformConfig.APP_KEY))) {
             throw new ShareConfigException("Please set Sina platform dev info.");
         }
     }
 
     @Override
     public void init() throws Exception {
-        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
-        mWeiboShareAPI.registerApp();
+        if (mWeiboShareAPI == null) {
+            mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
+            mWeiboShareAPI.registerApp();
+        }
     }
 
     /**
@@ -140,7 +142,8 @@ public class SinaShareHandler extends BaseShareHandler {
     }
 
     @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data, SocializeListeners.ShareListener listener) {
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent
+            data, SocializeListeners.ShareListener listener) {
         super.onActivityResult(activity, requestCode, resultCode, data, listener);
         if (mSsoHandler != null && TextUtils.isEmpty(getToken())) {
             mSsoHandler.authorizeCallBack(requestCode, resultCode, data);
@@ -444,7 +447,9 @@ public class SinaShareHandler extends BaseShareHandler {
         request.multiMessage = weiboMessage;
 
         final String token = getToken();
-        final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey, mShareConfiguration.getSinaRedirectUrl(), mShareConfiguration.getSinaScope());
+        Map<String, String> appConfig = mShareConfiguration.getPlatformConfig().getPlatformDevInfo(SocializeMedia.SINA);
+        final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey,
+                appConfig.get(SharePlatformConfig.REDIRECT_URL), appConfig.get(SharePlatformConfig.SCOPE));
         if (TextUtils.isEmpty(token)) {
             mWeiboMessage = weiboMessage;
             mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);

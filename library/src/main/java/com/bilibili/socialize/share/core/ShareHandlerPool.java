@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.bilibili.socialize.share.core.handler;
+package com.bilibili.socialize.share.core;
 
 import android.app.Activity;
 
-import com.bilibili.socialize.share.core.SocializeMedia;
-import com.bilibili.socialize.share.core.BiliShareConfiguration;
+import com.bilibili.socialize.share.core.handler.IShareHandler;
 import com.bilibili.socialize.share.core.handler.generic.CopyShareHandler;
 import com.bilibili.socialize.share.core.handler.generic.GenericShareHandler;
 import com.bilibili.socialize.share.core.handler.qq.QQChatShareHandler;
@@ -36,15 +35,14 @@ import java.util.Map;
  * @email jungly.ik@gmail.com
  * @since 2015/10/12
  */
-public class ShareHandlerPool {
+class ShareHandlerPool {
 
-    private static ShareHandlerPool ourInstance = new ShareHandlerPool();
     private Map<SocializeMedia, IShareHandler> mHandlerMap = new HashMap<>();
 
-    private ShareHandlerPool() {
+    ShareHandlerPool() {
     }
 
-    public static IShareHandler newHandler(Activity context, SocializeMedia type, BiliShareConfiguration shareConfiguration) {
+    IShareHandler newHandler(Activity context, SocializeMedia type, BiliShareConfiguration shareConfiguration) {
         IShareHandler handler = null;
         switch (type) {
             case WEIXIN:
@@ -75,17 +73,13 @@ public class ShareHandlerPool {
                 handler = new GenericShareHandler(context, shareConfiguration);
         }
 
-        ourInstance.mHandlerMap.put(type, handler);
+        mHandlerMap.put(type, handler);
 
         return handler;
     }
 
-    public static IShareHandler getCurrentHandler(SocializeMedia type) {
-        return ourInstance.mHandlerMap.get(type);
-    }
-
-    public static void remove(SocializeMedia type) {
-        ourInstance.mHandlerMap.remove(type);
+    void remove(SocializeMedia type) {
+        mHandlerMap.remove(type);
     }
 
 }

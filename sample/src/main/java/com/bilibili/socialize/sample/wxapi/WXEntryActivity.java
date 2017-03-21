@@ -16,14 +16,14 @@
 
 package com.bilibili.socialize.sample.wxapi;
 
-import com.bilibili.socialize.sample.helper.ConfigHelper;
+import com.bilibili.socialize.sample.helper.ShareHelper;
 import com.bilibili.socialize.share.core.ui.BaseWXEntryActivity;
 
 public class WXEntryActivity extends BaseWXEntryActivity {
 
     @Override
     protected String getAppId() {
-        return ConfigHelper.WECHAT_APPID;
+        return ShareHelper.WECHAT_APPID;
     }
 
 }

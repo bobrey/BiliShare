@@ -21,7 +21,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -42,8 +41,6 @@ import com.bilibili.socialize.share.core.shareparam.ShareParamText;
 import com.bilibili.socialize.share.core.shareparam.ShareParamVideo;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
 import com.bilibili.socialize.share.core.shareparam.ShareVideo;
-import com.tencent.mm.sdk.modelbase.BaseReq;
-import com.tencent.mm.sdk.modelbase.BaseResp;
 import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
 import com.tencent.mm.sdk.modelmsg.WXImageObject;
 import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
@@ -64,15 +61,14 @@ import java.util.Map;
 public abstract class BaseWxShareHandler extends BaseShareHandler {
     public static final String ACTION_RESULT = "com.bilibili.socialize.share.wx.result";
     public static final String BUNDLE_STATUS_CODE = "status_code";
+    public static final String BUNDLE_STATUS_MSG = "status_msg";
 
     protected static final int IMAGE_MAX = 32 * 1024;
     protected static final int IMAGE_WIDTH = 600;
     protected static final int IMAGE_HEIGHT = 800;
 
-    private static String mAppId;
+    private String mAppId;
     public IWXAPI mIWXAPI;
-
-    private ResultHolder mResultHolder = new ResultHolder();
 
     public BaseWxShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
@@ -84,12 +80,9 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
         }
     }
 
-    private static Map<String, Object> getAppConfig() {
-        Map<String, Object> appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.WEIXIN);
-        if (appConfig == null || appConfig.isEmpty()) {
-            appConfig = SharePlatformConfig.getPlatformDevInfo(SocializeMedia.WEIXIN_MONMENT);
-        }
-        return appConfig;
+    private Map<String, String> getAppConfig() {
+        SharePlatformConfig platformConfig = mShareConfiguration.getPlatformConfig();
+        return platformConfig.getPlatformDevInfo(SocializeMedia.WEIXIN);
     }
 
     @Override
@@ -98,42 +91,25 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
             return;
         }
 
-        Map<String, Object> appConfig = getAppConfig();
-        if (appConfig == null || appConfig.isEmpty() ||
-                TextUtils.isEmpty(mAppId = (String) appConfig.get(SharePlatformConfig.APP_ID))) {
+        Map<String, String> appConfig = getAppConfig();
+        if (appConfig == null || TextUtils.isEmpty(mAppId = appConfig.get(SharePlatformConfig.APP_ID))) {
             throw new ShareConfigException("Please set WeChat platform dev info.");
         }
     }
 
     @Override
     protected void init() throws Exception {
-        mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
-        if (mIWXAPI.isWXAppInstalled()) {
-            mIWXAPI.registerApp(mAppId);
+        if (mIWXAPI == null) {
+            mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
+            if (mIWXAPI.isWXAppInstalled()) {
+                mIWXAPI.registerApp(mAppId);
+            }
         }
 
         if (!mIWXAPI.isWXAppInstalled()) {
             String msg = getContext().getString(R.string.bili_share_sdk_not_install_wechat);
             Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
             throw new ShareException(msg, BiliShareStatusCode.ST_CODE_SHARE_ERROR_NOT_INSTALL);
-        }
-    }
-
-    @Override
-    public void onActivityCreated(Activity activity, Bundle savedInstanceState, SocializeListeners.ShareListener listener) {
-        super.onActivityCreated(activity, savedInstanceState, listener);
-        if (mResultHolder.mResp != null) {
-            parseResult(mResultHolder.mResp, listener);
-            mResultHolder.mResp = null;
-        }
-    }
-
-    @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data, SocializeListeners.ShareListener listener) {
-        super.onActivityResult(activity, requestCode, resultCode, data, listener);
-        if (mResultHolder.mResp != null) {
-            parseResult(mResultHolder.mResp, listener);
-            mResultHolder.mResp = null;
         }
     }
 
@@ -300,35 +276,6 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
         });
     }
 
-    public void onReq(BaseReq baseReq) {
-    }
-
-    public void onResp(BaseResp resp) {
-        SocializeListeners.ShareListener listener = getShareListener();
-        if (listener == null) {
-            mResultHolder.mResp = resp;
-            return;
-        }
-
-        parseResult(resp, listener);
-    }
-
-    private void parseResult(BaseResp resp, SocializeListeners.ShareListener listener) {
-        switch (resp.errCode) {
-            case BaseResp.ErrCode.ERR_OK:
-                listener.onSuccess(getSocializeType(), BiliShareStatusCode.ST_CODE_SUCCESSED);
-                break;
-
-            case BaseResp.ErrCode.ERR_USER_CANCEL:
-                listener.onCancel(getSocializeType());
-                break;
-
-            case BaseResp.ErrCode.ERR_SENT_FAILED:
-                listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException(resp.errStr));
-                break;
-        }
-    }
-
     @Override
     public void release() {
         try {
@@ -350,10 +297,12 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
             }
 
             int code = intent.getIntExtra(BUNDLE_STATUS_CODE, -1);
+            String msg = intent.getStringExtra(BUNDLE_STATUS_MSG);
             if (code == BiliShareStatusCode.ST_CODE_SUCCESSED) {
                 listener.onSuccess(getSocializeType(), BiliShareStatusCode.ST_CODE_SUCCESSED);
             } else if (code == BiliShareStatusCode.ST_CODE_ERROR) {
-                listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException("unknown"));
+                listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED,
+                        new ShareException(TextUtils.isEmpty(msg) ? "unknown" : msg));
             } else if (code == BiliShareStatusCode.ST_CODE_ERROR_CANCEL) {
                 listener.onCancel(getSocializeType());
             }
@@ -368,9 +317,5 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     abstract int getShareType();
 
     protected abstract SocializeMedia getSocializeType();
-
-    private static class ResultHolder {
-        BaseResp mResp;
-    }
 
 }
