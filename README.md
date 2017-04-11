@@ -15,7 +15,7 @@ The library "biliShare" is indispensable. But "biliShare-util" is not indispensa
  - Add the dependency to your build.gradle.
 ```
 dependencies {
-    compile 'com.bilibili:biliShare:0.1.05'
+    compile 'com.bilibili:biliShare:0.1.06'
 }
 ```
 
@@ -75,4 +75,3 @@ License
 
   [1]: http://wsdownload.hdslb.net/app/BiliPlayer3.apk
   [2]: http://7qnau5.com1.z0.glb.clouddn.com/Screenshot_2016-04-26-00-13-35.png?imageView2/1/w/360/h/640
-
