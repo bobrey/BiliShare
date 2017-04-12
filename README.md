@@ -16,6 +16,8 @@ The library "biliShare" is indispensable. But "biliShare-util" is not indispensa
 ```
 dependencies {
     compile 'com.bilibili:biliShare:0.1.06'
+    
+    compile 'com.bilibili:biliShare-utils:0.1.06'
 }
 ```
 
