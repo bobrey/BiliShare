@@ -43,13 +43,13 @@ public abstract class BaseSharePlatformSelector {
     private AdapterView.OnItemClickListener mItemClickListener;
 
     private static ShareTarget[] shareTargets = {
-            new ShareTarget(SocializeMedia.SINA, R.string.bili_socialize_text_sina_key, R.drawable.bili_socialize_sina_on),
-            new ShareTarget(SocializeMedia.WEIXIN, R.string.bili_socialize_text_weixin_key, R.drawable.bili_socialize_wechat),
-            new ShareTarget(SocializeMedia.WEIXIN_MONMENT, R.string.bili_socialize_text_weixin_circle_key, R.drawable.bili_socialize_wxcircle),
-            new ShareTarget(SocializeMedia.QQ, R.string.bili_socialize_text_qq_key, R.drawable.bili_socialize_qq_on),
-            new ShareTarget(SocializeMedia.QZONE, R.string.bili_socialize_text_qq_zone_key, R.drawable.bili_socialize_qzone_on),
-            new ShareTarget(SocializeMedia.GENERIC, R.string.bili_share_sdk_others, R.drawable.bili_socialize_sms_on),
-            new ShareTarget(SocializeMedia.COPY, R.string.bili_socialize_text_copy_url, R.drawable.bili_socialize_copy_url)
+            new ShareTarget(SocializeMedia.SINA),
+            new ShareTarget(SocializeMedia.WEIXIN),
+            new ShareTarget(SocializeMedia.WEIXIN_MONMENT),
+            new ShareTarget(SocializeMedia.QQ),
+            new ShareTarget(SocializeMedia.QZONE),
+            new ShareTarget(SocializeMedia.GENERIC),
+            new ShareTarget(SocializeMedia.COPY)
     };
 
     public BaseSharePlatformSelector(FragmentActivity context, OnShareSelectorDismissListener dismissListener, AdapterView.OnItemClickListener itemClickListener) {
@@ -112,10 +112,37 @@ public abstract class BaseSharePlatformSelector {
         public int iconId;
         public SocializeMedia media;
 
-        public ShareTarget(SocializeMedia media, int titleId, int iconId) {
+        public ShareTarget(SocializeMedia media) {
             this.media = media;
-            this.iconId = iconId;
+            switch (this.media) {
+                case SINA:
+                    init(R.string.bili_socialize_text_sina_key, R.drawable.bili_socialize_sina_on);
+                    break;
+                case WEIXIN:
+                    init(R.string.bili_socialize_text_weixin_key, R.drawable.bili_socialize_wechat);
+                    break;
+                case WEIXIN_MONMENT:
+                    init(R.string.bili_socialize_text_weixin_circle_key, R.drawable.bili_socialize_wxcircle);
+                    break;
+                case QQ:
+                    init(R.string.bili_socialize_text_qq_key, R.drawable.bili_socialize_qq_on);
+                    break;
+                case QZONE:
+                    init(R.string.bili_socialize_text_qq_zone_key, R.drawable.bili_socialize_qzone_on);
+                    break;
+                case COPY:
+                    init(R.string.bili_socialize_text_copy_url, R.drawable.bili_socialize_copy_url);
+                    break;
+                case GENERIC:
+                default:
+                    init(R.string.bili_share_sdk_others, R.drawable.bili_socialize_sms_on);
+                    break;
+            }
+        }
+
+        private void init(int titleId, int iconId) {
             this.titleId = titleId;
+            this.iconId = iconId;
         }
     }
 

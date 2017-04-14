@@ -114,7 +114,6 @@ public class DialogSharePlatformSelector extends BaseSharePlatformSelector {
         @Override
         public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
             GridView grid = createShareGridView(inflater.getContext(), mShareItemClick);
-            grid.setBackgroundColor(0xffffffff);
             return grid;
         }
 
